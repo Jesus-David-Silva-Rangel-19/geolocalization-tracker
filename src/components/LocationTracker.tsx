@@ -5,6 +5,14 @@ import { Card } from "@/components/ui/card";
 import { MapPin } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import * as turf from '@turf/turf';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 interface Location {
   id: string;
@@ -107,17 +115,42 @@ export const LocationTracker = () => {
 
       <div className="w-full space-y-4">
         {locations.map((location) => (
-          <LocationCard key={location.id} location={location} />
+          <LocationCard 
+            key={location.id} 
+            location={location}
+            existingSpecies={[...new Set(locations.map(loc => loc.species).filter(Boolean))]}
+          />
         ))}
       </div>
     </div>
   );
 };
 
-const LocationCard = ({ location }: { location: Location }) => {
+const LocationCard = ({ 
+  location, 
+  existingSpecies 
+}: { 
+  location: Location; 
+  existingSpecies: string[];
+}) => {
   const [species, setSpecies] = useState(location.species || '');
+  const [customSpecies, setCustomSpecies] = useState('');
   const [health, setHealth] = useState(location.health || '');
   const { toast } = useToast();
+
+  const handleSpeciesChange = (value: string) => {
+    if (value === 'custom') {
+      setSpecies('');
+    } else {
+      setSpecies(value);
+      setCustomSpecies('');
+    }
+  };
+
+  const handleCustomSpeciesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomSpecies(e.target.value);
+    setSpecies(e.target.value);
+  };
 
   const handleSave = () => {
     toast({
@@ -160,20 +193,38 @@ const LocationCard = ({ location }: { location: Location }) => {
       </div>
 
       <div className="space-y-2">
-        <input
-          type="text"
-          placeholder="Species"
-          value={species}
-          onChange={(e) => setSpecies(e.target.value)}
-          className="w-full p-2 text-sm border rounded"
-        />
-        <input
+        <Select value={species} onValueChange={handleSpeciesChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select species" />
+          </SelectTrigger>
+          <SelectContent>
+            {existingSpecies.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+            <SelectItem value="custom">Enter new species</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {species === '' && (
+          <Input
+            type="text"
+            placeholder="Enter new species"
+            value={customSpecies}
+            onChange={handleCustomSpeciesChange}
+            className="mt-2"
+          />
+        )}
+
+        <Input
           type="text"
           placeholder="Health Status"
           value={health}
           onChange={(e) => setHealth(e.target.value)}
           className="w-full p-2 text-sm border rounded"
         />
+        
         <Button 
           onClick={handleSave}
           variant="outline" 
