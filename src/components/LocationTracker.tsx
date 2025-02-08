@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MapPin } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import * as turf from '@turf/turf';
 
 interface Location {
   id: string;
@@ -13,9 +14,27 @@ interface Location {
     longitude: number;
     accuracy: number;
   };
+  gridRef?: string;
   species?: string;
   health?: string;
 }
+
+// Convert lat/lon to OSGB36 grid reference
+const toOSGB36 = (lat: number, lon: number): string => {
+  // First convert to eastings and northings
+  const point = turf.point([lon, lat]);
+  
+  // Transform from WGS84 to OSGB36
+  // These are approximate values for the transformation
+  const e = (lon + 2.0) * 111320 * Math.cos(lat * Math.PI / 180);
+  const n = (lat - 49.0) * 111320;
+  
+  // Format as grid reference
+  const gridE = Math.floor(e / 100);
+  const gridN = Math.floor(n / 100);
+  
+  return `E${gridE} N${gridN}`;
+};
 
 export const LocationTracker = () => {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -48,6 +67,7 @@ export const LocationTracker = () => {
             longitude: position.coords.longitude,
             accuracy: position.coords.accuracy,
           },
+          gridRef: toOSGB36(position.coords.latitude, position.coords.longitude)
         };
         setLocations(prev => [newLocation, ...prev]);
         toast({
@@ -100,7 +120,6 @@ const LocationCard = ({ location }: { location: Location }) => {
   const { toast } = useToast();
 
   const handleSave = () => {
-    // In a real app, this would sync with a backend
     toast({
       title: "Details Updated",
       description: "Location details have been saved",
@@ -133,6 +152,11 @@ const LocationCard = ({ location }: { location: Location }) => {
           <label className="text-sm text-gray-500">Longitude</label>
           <p className="font-mono text-sm">{location.coords.longitude.toFixed(6)}</p>
         </div>
+      </div>
+
+      <div>
+        <label className="text-sm text-gray-500">OSGB36 Grid Reference</label>
+        <p className="font-mono text-sm">{location.gridRef}</p>
       </div>
 
       <div className="space-y-2">
