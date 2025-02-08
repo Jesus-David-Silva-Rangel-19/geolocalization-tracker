@@ -135,21 +135,26 @@ const LocationCard = ({
 }) => {
   const [species, setSpecies] = useState(location.species || '');
   const [customSpecies, setCustomSpecies] = useState('');
+  const [isCustom, setIsCustom] = useState(false);
   const [health, setHealth] = useState(location.health || '');
   const { toast } = useToast();
 
   const handleSpeciesChange = (value: string) => {
     if (value === 'custom') {
+      setIsCustom(true);
       setSpecies('');
+      setCustomSpecies('');
     } else {
+      setIsCustom(false);
       setSpecies(value);
       setCustomSpecies('');
     }
   };
 
   const handleCustomSpeciesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCustomSpecies(e.target.value);
-    setSpecies(e.target.value);
+    const value = e.target.value;
+    setCustomSpecies(value);
+    setSpecies(value);
   };
 
   const handleSave = () => {
@@ -193,7 +198,7 @@ const LocationCard = ({
       </div>
 
       <div className="space-y-2">
-        <Select value={species} onValueChange={handleSpeciesChange}>
+        <Select value={isCustom ? 'custom' : species} onValueChange={handleSpeciesChange}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select species" />
           </SelectTrigger>
@@ -207,7 +212,7 @@ const LocationCard = ({
           </SelectContent>
         </Select>
 
-        {species === '' && (
+        {isCustom && (
           <Input
             type="text"
             placeholder="Enter new species"
@@ -236,3 +241,4 @@ const LocationCard = ({
     </Card>
   );
 };
+
