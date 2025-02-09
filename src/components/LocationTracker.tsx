@@ -22,26 +22,25 @@ interface Location {
     longitude: number;
     accuracy: number;
   };
-  gridRef?: string;
+  eastings?: number;
+  northings?: number;
   species?: string;
   health?: string;
 }
 
-// Convert lat/lon to OSGB36 grid reference
-const toOSGB36 = (lat: number, lon: number): string => {
+// Convert lat/lon to OSGB36 eastings and northings
+const toOSGB36 = (lat: number, lon: number): { eastings: number; northings: number } => {
   // First convert to eastings and northings
   const point = turf.point([lon, lat]);
   
-  // Transform from WGS84 to OSGB36
-  // These are approximate values for the transformation
-  const e = (lon + 2.0) * 111320 * Math.cos(lat * Math.PI / 180);
-  const n = (lat - 49.0) * 111320;
+  // Transform from WGS84 to OSGB36 (approximate conversion)
+  const eastings = (lon + 2.0) * 111320 * Math.cos(lat * Math.PI / 180);
+  const northings = (lat - 49.0) * 111320;
   
-  // Format as grid reference
-  const gridE = Math.floor(e / 100);
-  const gridN = Math.floor(n / 100);
-  
-  return `E${gridE} N${gridN}`;
+  return {
+    eastings: Math.floor(eastings),
+    northings: Math.floor(northings)
+  };
 };
 
 export const LocationTracker = () => {
@@ -67,6 +66,7 @@ export const LocationTracker = () => {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        const coordinates = toOSGB36(position.coords.latitude, position.coords.longitude);
         const newLocation: Location = {
           id: generateReference(),
           timestamp: Date.now(),
@@ -75,7 +75,8 @@ export const LocationTracker = () => {
             longitude: position.coords.longitude,
             accuracy: position.coords.accuracy,
           },
-          gridRef: toOSGB36(position.coords.latitude, position.coords.longitude)
+          eastings: coordinates.eastings,
+          northings: coordinates.northings
         };
         setLocations(prev => [newLocation, ...prev]);
         toast({
@@ -192,9 +193,15 @@ const LocationCard = ({
         </div>
       </div>
 
-      <div>
-        <label className="text-sm text-gray-500">OSGB36 Grid Reference</label>
-        <p className="font-mono text-sm">{location.gridRef}</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm text-gray-500">Eastings</label>
+          <p className="font-mono text-sm">{location.eastings}</p>
+        </div>
+        <div>
+          <label className="text-sm text-gray-500">Northings</label>
+          <p className="font-mono text-sm">{location.northings}</p>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -241,4 +248,3 @@ const LocationCard = ({
     </Card>
   );
 };
-
